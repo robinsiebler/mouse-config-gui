@@ -1,3 +1,4 @@
+
 # Mouse Configurator
 
 GTK4 + libadwaita GUI front end for [`mouse_m908`](https://github.com/dokutan/mouse_m908),
@@ -15,6 +16,19 @@ for a UI mockup.
   (e.g. `gir1.2-adw-1`/`libadwaita` + `python3-gi` on Debian/Ubuntu, `python-gobject` +
   `libadwaita` on Arch, `python3-gobject` on Fedora)
 - [`mouse_m908`](https://github.com/dokutan/mouse_m908) installed and on `PATH`
+
+## Install
+
+```sh
+python3 -m venv --system-site-packages .venv
+source .venv/bin/activate
+pip install git+https://github.com/robinsiebler/mouse-config-gui.git
+mouse-config-gui
+```
+
+`--system-site-packages` is required so the venv can see the system-installed
+PyGObject/GTK4 -- pip can't build those from source without the underlying C
+libraries (cairo, girepository, etc.) present, so don't skip this flag.
 
 ## Development setup
 

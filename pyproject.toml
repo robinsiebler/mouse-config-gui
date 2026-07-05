@@ -21,3 +21,6 @@ mouse-config-gui = "mouse_config_gui.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+mouse_config_gui = ["capabilities/*.yaml"]
