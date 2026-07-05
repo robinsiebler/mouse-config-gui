@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mouse-config-gui"
+version = "0.1.0"
+description = "GTK4/libadwaita GUI front end for the mouse_m908 CLI tool"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "PyGObject>=3.42",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+mouse-config-gui = "mouse_config_gui.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

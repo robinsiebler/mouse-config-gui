@@ -1,0 +1,36 @@
+model: "generic"
+usb:
+  vid: 0x04d9
+  # Broad allowlist covering every mouse with only "generic" (non-model-specific)
+  # support, per include/generic/data.cpp _c_all_pids. Models with their own
+  # dedicated capability file below take priority over this fallback when both
+  # would otherwise match the same PID (e.g. 0xfc4d/M908 is in this list too).
+  pids: [0xfc02, 0xfc0f, 0xfc2a, 0xfc30, 0xfc38, 0xfc39, 0xfc2f, 0xfc3f, 0xfc40,
+         0xfc41, 0xfc42, 0xfc49, 0xfc4c, 0xfc4d, 0xfc4f, 0xfc56, 0xfc58, 0xfc5c,
+         0xfc5e, 0xfc5f, 0xfc61]
+num_profiles: 5
+num_macro_slots: 15
+led:
+  lightmodes: [breathing, breathing_rainbow, rainbow, static, wave,
+               alternating, reactive, reactive_button, flashing, "off", random]
+  brightness_range: [1, 3]
+  speed_range: [1, 8]
+  speed_readback_reliable: false
+  scrollspeed_range: [1, 0x3f]
+  scrollspeed_readback_reliable: false
+report_rates: [125, 250, 500, 1000]
+dpi:
+  formats: [bytecode]        # no per-model decimal table; raw 0x[04-8c][00-01] only
+  num_slots: 5
+  min_enabled: 1
+buttons:
+  supported: false           # v2
+  count: 8
+  names: [button_left, button_right, button_middle, button_forward,
+          button_backward, button_dpi, scroll_up, scroll_down]
+macros:
+  supported: false           # v2
+quirks:
+  - "Fallback for any 0x04d9 device without its own capability descriptor. DPI is
+     raw-bytecode-only since the actual-DPI-to-bytecode mapping differs per model
+     and generic has no per-model table to draw from."

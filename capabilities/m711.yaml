@@ -1,0 +1,34 @@
+model: "711"
+usb:
+  vid: 0x04d9
+  pids: [0xfc30]
+num_profiles: 5
+num_macro_slots: 15
+led:
+  lightmodes: [breathing, breathing_rainbow, rainbow, static, wave,
+               alternating, reactive, reactive_button, flashing, "off", random]
+  brightness_range: [1, 3]
+  speed_range: [1, 8]
+  speed_readback_reliable: false
+  scrollspeed_range: [1, 0x3f]
+  scrollspeed_readback_reliable: false
+report_rates: [125, 250, 500, 1000]
+dpi:
+  formats: [actual, bytecode]
+  actual_range: [100, 10000]
+  actual_step_breakpoints: [[100, 5000, 100], [5200, 10000, 200]]
+  num_slots: 5
+  min_enabled: 1
+  per_axis: true            # uniquely among these models: also accepts "X<n>Y<m>" for independent X/Y DPI
+buttons:
+  supported: false           # v2
+  count: 10
+  names: [button_left, button_right, button_middle, button_forward,
+          button_backward, button_dpi, button_dpi_up, button_dpi_down,
+          button_lightmode, scroll_up]
+macros:
+  supported: false           # v2
+quirks:
+  - "Most flexible DPI input of any model: accepts 0x[4-hex] (raw, shared X/Y), 0x[8-hex]
+     (raw, separate X/Y), plain decimal (shared X/Y), and \"X<n>Y<m>\" (independent
+     per-axis decimal DPI) -- v1 UI only needs to support the shared-value forms."

@@ -1,0 +1,31 @@
+model: "721"
+usb:
+  vid: 0x04d9
+  pids: [0xfc5c]
+num_profiles: 5
+num_macro_slots: 15
+led:
+  lightmodes: [breathing, breathing_rainbow, rainbow, static, wave,
+               alternating, reactive, reactive_button, flashing, "off", random]
+  brightness_range: [1, 3]
+  speed_range: [1, 8]
+  speed_readback_reliable: false
+  scrollspeed_range: [1, 0x3f]
+  scrollspeed_readback_reliable: false
+report_rates: [125, 250, 500, 1000]
+dpi:
+  formats: [bytecode]        # decimal lookup table exists in source but is entirely
+                              # commented out ("TODO!") -- never resolves, so raw only in practice
+  num_slots: 5
+  min_enabled: 1
+buttons:
+  supported: false           # v2
+  count: 10
+  names: [button_left, button_right, button_middle, button_fire, button_forward,
+          button_backward, button_lightmode, button_dpi, scroll_up, scroll_down]
+macros:
+  supported: false           # v2
+quirks:
+  - "include/m721/data.cpp has a full decimal-DPI table written out but commented
+     out wholesale and marked TODO! -- decimal DPI input silently never matches, so
+     only raw bytecode 0x[04-8c][00-01] works despite the code path existing."

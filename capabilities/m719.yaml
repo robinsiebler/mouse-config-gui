@@ -1,0 +1,31 @@
+model: "719"
+usb:
+  vid: 0x04d9
+  pids: [0xfc4f]
+num_profiles: 5
+num_macro_slots: 15
+led:
+  lightmodes: [breathing, breathing_rainbow, rainbow, static, wave,
+               alternating, reactive, reactive_button, flashing, "off", random]
+  brightness_range: [1, 3]
+  speed_range: [1, 8]
+  speed_readback_reliable: false
+  scrollspeed_range: [1, 0x3f]
+  scrollspeed_readback_reliable: false
+report_rates: [125, 250, 500, 1000]
+dpi:
+  formats: [actual, bytecode]
+  actual_range: [100, 10000]
+  actual_step_breakpoints: [[100, 5000, 100], [5200, 10000, 200]]
+  num_slots: 5
+  min_enabled: 1
+buttons:
+  supported: false           # v2
+  count: 10
+  names: [button_left, button_right, button_middle, button_fire, button_forward,
+          button_backward, button_lightmode, button_dpi, scroll_up, scroll_down]
+macros:
+  supported: false           # v2
+quirks:
+  - "Along with M908, one of the two models the upstream README calls out as having
+     every setting fully implemented (design doc §3.2)."

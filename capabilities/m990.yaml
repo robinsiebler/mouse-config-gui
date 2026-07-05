@@ -1,0 +1,37 @@
+model: "990"
+usb:
+  vid: 0x04d9
+  pids: [0xfc0f]
+num_profiles: 5
+num_macro_slots: 15
+led:
+  lightmodes: [breathing, breathing_rainbow, rainbow, static, wave,
+               alternating, reactive, reactive_button, flashing, "off", random]
+  brightness_range: [1, 3]
+  speed_range: [1, 8]
+  speed_readback_reliable: false
+  scrollspeed_range: [1, 0x3f]
+  scrollspeed_readback_reliable: false
+report_rates: [125, 250, 500, 1000]
+dpi:
+  formats: [bytecode]        # decimal table declared but left empty ("TODO!") -- raw only in practice
+  num_slots: 5
+  min_enabled: 1
+buttons:
+  supported: false           # v2
+  count: 26
+  names: [button_left, button_right, button_middle, button_fire, button_dpi_up,
+          button_dpi_down, button_1, button_2, button_3, button_4, button_5,
+          button_6, button_7, button_8, button_9, button_10, button_11,
+          button_12, button_13, button_14, button_15, button_16, button_mode,
+          button_profile, scroll_up, scroll_down]
+macros:
+  supported: false           # v2
+quirks:
+  - "include/m990/data.cpp leaves _c_dpi_codes empty with a comment: 'Take a look at
+     the M908 implementation for details. Min. 50, Max. 16400' -- decimal DPI was
+     never actually implemented despite the intended range being documented."
+  - "Uses differently-shaped USB packet tables (_c_data_settings_16/64/256) than the
+     rest of the m908 family, suggesting a distinct wire protocol -- write-path parity
+     with other models is not independently confirmed from source alone."
+  - "Most programmable buttons of any model (26)."

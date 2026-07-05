@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mouse Configurator — UI Mockup</title>
+<style>
+  :root{
+    --window-bg:#fafafb;
+    --headerbar-top:#ededed;
+    --headerbar-bottom:#e1e1e1;
+    --headerbar-border:#c8c2bd;
+    --card-bg:#ffffff;
+    --card-border:#dcdcdc;
+    --text-primary:#242424;
+    --text-secondary:#787670;
+    --accent:#3584e4;
+    --accent-hover:#1c71d8;
+    --switcher-bg:#e3e3e3;
+    --danger:#e01b24;
+    --radius:12px;
+    --radius-sm:6px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:Cantarell, -apple-system, "Segoe UI", Ubuntu, sans-serif;
+    background:var(--window-bg);
+    color:var(--text-primary);
+    display:flex;
+    justify-content:center;
+    padding:32px 16px;
+  }
+  .window{
+    width:640px;
+    max-width:100%;
+    background:var(--window-bg);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.06);
+  }
+
+  /* Header bar */
+  .headerbar{
+    background:linear-gradient(var(--headerbar-top), var(--headerbar-bottom));
+    border-bottom:1px solid var(--headerbar-border);
+    padding:10px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .headerbar .title{
+    font-weight:700;
+    font-size:14.5px;
+    letter-spacing:.1px;
+  }
+  .headerbar .left, .headerbar .right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  select.model-select{
+    font-family:inherit;
+    font-size:12.5px;
+    padding:5px 24px 5px 10px;
+    border-radius:var(--radius-sm);
+    border:1px solid #bdbdbd;
+    background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6"><path d="M0 0l5 6 5-6z" fill="%23555"/></svg>') no-repeat right 8px center;
+    appearance:none;
+    color:var(--text-primary);
+  }
+  .btn{
+    font-family:inherit;
+    font-size:12.5px;
+    padding:6px 12px;
+    border-radius:var(--radius-sm);
+    border:1px solid #bdbdbd;
+    background:linear-gradient(#fff, #f2f2f2);
+    cursor:pointer;
+    color:var(--text-primary);
+  }
+  .btn:hover{ background:linear-gradient(#fff,#e9e9e9); }
+  .btn.suggested{
+    background:linear-gradient(var(--accent), var(--accent-hover));
+    border-color:var(--accent-hover);
+    color:#fff;
+    font-weight:600;
+  }
+  .btn.suggested:hover{ filter:brightness(1.05); }
+  .btn[disabled]{ opacity:.45; cursor:not-allowed; }
+
+  /* View switcher (profile tabs) */
+  .switcher-wrap{
+    display:flex;
+    justify-content:center;
+    padding:10px 12px 0;
+    background:var(--window-bg);
+  }
+  .switcher{
+    display:flex;
+    background:var(--switcher-bg);
+    border-radius:8px;
+    padding:3px;
+    gap:2px;
+  }
+  .tab{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 12px;
+    border-radius:6px;
+    font-size:12.5px;
+    cursor:pointer;
+    color:var(--text-secondary);
+    position:relative;
+    user-select:none;
+  }
+  .tab.active{
+    background:#fff;
+    color:var(--text-primary);
+    box-shadow:0 1px 2px rgba(0,0,0,.15);
+    font-weight:600;
+  }
+  .tab .dot{
+    width:9px;height:9px;border-radius:50%;
+    box-shadow:0 0 0 1px rgba(0,0,0,.15) inset;
+  }
+  .tab .live-chip{
+    font-size:9.5px;
+    background:#e6f0fc;
+    color:var(--accent-hover);
+    border-radius:20px;
+    padding:1px 6px;
+    margin-left:2px;
+    font-weight:600;
+    display:none;
+  }
+  .tab.is-active-on-mouse .live-chip{ display:inline-block; }
+
+  /* Content */
+  .content{ padding:18px 20px 26px; }
+  .group{
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    border-radius:var(--radius);
+    margin-bottom:16px;
+    overflow:hidden;
+  }
+  .group-title{
+    font-size:12px;
+    font-weight:700;
+    color:var(--text-secondary);
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    padding:10px 14px 6px;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    border-top:1px solid #f0f0f0;
+    gap:12px;
+  }
+  .row:first-of-type{ border-top:none; }
+  .row .label{ font-size:13.5px; }
+  .row .sub{ font-size:11px; color:var(--text-secondary); margin-top:2px; }
+  .row-main{ display:flex; flex-direction:column; }
+
+  select.field{
+    font-family:inherit;
+    font-size:12.5px;
+    padding:5px 26px 5px 10px;
+    border-radius:var(--radius-sm);
+    border:1px solid #c8c8c8;
+    background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6"><path d="M0 0l5 6 5-6z" fill="%23555"/></svg>') no-repeat right 9px center;
+    appearance:none;
+    min-width:130px;
+  }
+  input.field-text{
+    font-family:inherit;
+    font-size:12.5px;
+    padding:5px 8px;
+    border-radius:var(--radius-sm);
+    border:1px solid #c8c8c8;
+    width:110px;
+  }
+  input.field-text:focus, select.field:focus{
+    outline:2px solid rgba(53,132,228,.5);
+    outline-offset:0;
+    border-color:var(--accent);
+  }
+  input[type=color]{
+    width:34px;height:26px;
+    border-radius:6px;
+    border:1px solid #c8c8c8;
+    padding:0;
+    cursor:pointer;
+    background:none;
+  }
+  .color-cell{ display:flex; align-items:center; gap:8px; }
+  .hex-label{ font-size:12px; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+
+  /* DPI rows */
+  .dpi-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 14px;
+    border-top:1px solid #f0f0f0;
+  }
+  .dpi-row:first-of-type{ border-top:none; }
+  .dpi-row .lvl{ width:58px; font-size:12.5px; color:var(--text-secondary); }
+  .dpi-row select.field{ min-width:100px; }
+  .dpi-row input.field-text{ width:90px; }
+  input[type=checkbox]{ width:16px; height:16px; accent-color:var(--accent); }
+  .dpi-note{
+    font-size:11px;
+    color:var(--text-secondary);
+    padding:0 14px 10px;
+  }
+  .format-hint{
+    font-size:11px;
+    color:var(--accent-hover);
+    background:#eaf2fc;
+    padding:6px 14px;
+    border-bottom:1px solid #dbe8fa;
+  }
+
+  /* v2 placeholder */
+  .v2-badge{
+    font-size:10px;
+    font-weight:700;
+    background:#f4ecd0;
+    color:#8a6d1c;
+    padding:2px 8px;
+    border-radius:20px;
+  }
+  .v2-body{
+    padding:6px 14px 14px;
+    font-size:12px;
+    color:var(--text-secondary);
+  }
+</style>
+</head>
+<body>
+
+<div class="window">
+
+  <!-- Header bar -->
+  <div class="headerbar">
+    <div class="left">
+      <span class="title">Mouse Configurator</span>
+    </div>
+    <div class="right">
+      <select class="model-select" id="modelSelect" onchange="onModelChange()">
+        <option value="m908">Redragon M908 Impact</option>
+        <option value="generic">Generic (VID 0x04d9)</option>
+        <option value="m990chroma">Redragon M990 Chroma</option>
+        <option value="m607">Redragon M607</option>
+      </select>
+      <button class="btn">Read from Mouse</button>
+      <button class="btn suggested">Apply to Mouse</button>
+    </div>
+  </div>
+
+  <!-- Profile tabs -->
+  <div class="switcher-wrap">
+    <div class="switcher" id="switcher">
+      <div class="tab active is-active-on-mouse" data-tab="1" onclick="selectTab(1)">
+        <span class="dot" style="background:#0066ff"></span>Profile 1<span class="live-chip">Active</span>
+      </div>
+      <div class="tab" data-tab="2" onclick="selectTab(2)">
+        <span class="dot" style="background:#ff3b30"></span>Profile 2
+      </div>
+      <div class="tab" data-tab="3" onclick="selectTab(3)">
+        <span class="dot" style="background:#34c759"></span>Profile 3
+      </div>
+      <div class="tab" data-tab="4" onclick="selectTab(4)">
+        <span class="dot" style="background:#ffcc00"></span>Profile 4
+      </div>
+      <div class="tab" data-tab="5" onclick="selectTab(5)">
+        <span class="dot" style="background:#af52de"></span>Profile 5
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- LED group -->
+    <div class="group">
+      <div class="group-title">LED</div>
+      <div class="row">
+        <div class="row-main"><span class="label">Light effect</span></div>
+        <select class="field" id="lightmode">
+          <option>Static</option>
+          <option>Breathing</option>
+          <option>Breathing (rainbow)</option>
+          <option>Rainbow</option>
+          <option>Wave</option>
+          <option>Alternating</option>
+          <option>Reactive</option>
+          <option>Reactive (per button)</option>
+          <option>Flashing</option>
+          <option>Random</option>
+          <option>Off</option>
+        </select>
+      </div>
+      <div class="row">
+        <div class="row-main"><span class="label">Color</span></div>
+        <div class="color-cell">
+          <input type="color" id="colorPicker" value="#0066ff" oninput="updateHex()">
+          <span class="hex-label" id="hexLabel">0066ff</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-main"><span class="label">Brightness</span></div>
+        <select class="field">
+          <option>1</option><option selected>2</option><option>3</option>
+        </select>
+      </div>
+      <div class="row">
+        <div class="row-main">
+          <span class="label">Animation speed</span>
+          <span class="sub">Write-only reliable — the mouse doesn't always report this back accurately</span>
+        </div>
+        <select class="field">
+          <option>1</option><option>2</option><option>3</option><option>4</option>
+          <option>5</option><option>6</option><option>7</option><option>8</option>
+        </select>
+      </div>
+      <div class="row" id="scrollspeedRow" style="display:none">
+        <div class="row-main"><span class="label">Scroll speed</span></div>
+        <select class="field">
+          <option>1</option><option>2</option><option>3</option><option>&hellip;</option><option>63</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Performance group -->
+    <div class="group">
+      <div class="group-title">Performance</div>
+      <div class="row">
+        <div class="row-main"><span class="label">Report rate</span></div>
+        <select class="field">
+          <option>125 Hz</option><option>250 Hz</option>
+          <option selected>500 Hz</option><option>1000 Hz</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- DPI group -->
+    <div class="group">
+      <div class="group-title">DPI levels</div>
+      <div class="format-hint" id="formatHint">
+        M908: enter an actual DPI value (e.g. 2200) or raw bytecode (e.g. 0x4a01)
+      </div>
+
+      <div class="dpi-row">
+        <input type="checkbox" checked disabled title="At least one level must stay enabled">
+        <span class="lvl">Level 1</span>
+        <select class="field"><option>500</option><option>1000</option><option>2000</option><option>Custom&hellip;</option></select>
+        <input class="field-text" placeholder="e.g. 2200" value="500">
+      </div>
+      <div class="dpi-row">
+        <input type="checkbox">
+        <span class="lvl">Level 2</span>
+        <select class="field"><option selected>1000</option><option>2000</option><option>3000</option><option>Custom&hellip;</option></select>
+        <input class="field-text" placeholder="e.g. 2200" disabled>
+      </div>
+      <div class="dpi-row">
+        <input type="checkbox">
+        <span class="lvl">Level 3</span>
+        <select class="field"><option>1000</option><option selected>2000</option><option>3000</option><option>Custom&hellip;</option></select>
+        <input class="field-text" placeholder="e.g. 2200" disabled>
+      </div>
+      <div class="dpi-row">
+        <input type="checkbox">
+        <span class="lvl">Level 4</span>
+        <select class="field"><option>2000</option><option selected>3000</option><option>6200</option><option>Custom&hellip;</option></select>
+        <input class="field-text" placeholder="e.g. 2200" disabled>
+      </div>
+      <div class="dpi-row">
+        <input type="checkbox" checked>
+        <span class="lvl">Level 5</span>
+        <select class="field"><option>3000</option><option selected>6200</option><option>Custom&hellip;</option></select>
+        <input class="field-text" placeholder="e.g. 2200" value="6200">
+      </div>
+      <div class="dpi-note">At least one level must remain enabled — the checkbox for the last active level is locked.</div>
+    </div>
+
+    <!-- Button mapping placeholder -->
+    <div class="group">
+      <div class="row">
+        <div class="row-main"><span class="label">Button mapping &amp; macros</span></div>
+        <span class="v2-badge">Coming later</span>
+      </div>
+      <div class="v2-body">
+        Button and macro editing will arrive in a future version. This mouse's config
+        keeps whatever mapping is already on it — this app won't touch or clear it.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function selectTab(n){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelector(`.tab[data-tab="${n}"]`).classList.add('active');
+    // Sample data swap just to show tabs are live — profile 1 differs from the rest
+    const sample = {
+      1:{color:'#0066ff', lightmode:0},
+      2:{color:'#ff3b30', lightmode:3},
+      3:{color:'#34c759', lightmode:3},
+      4:{color:'#ffcc00', lightmode:3},
+      5:{color:'#af52de', lightmode:3},
+    }[n];
+    document.getElementById('colorPicker').value = sample.color;
+    document.getElementById('lightmode').selectedIndex = sample.lightmode;
+    updateHex();
+  }
+  function updateHex(){
+    const v = document.getElementById('colorPicker').value.replace('#','');
+    document.getElementById('hexLabel').textContent = v;
+  }
+  function onModelChange(){
+    const model = document.getElementById('modelSelect').value;
+    const scrollRow = document.getElementById('scrollspeedRow');
+    const hint = document.getElementById('formatHint');
+    if(model === 'm908'){
+      scrollRow.style.display = 'none';
+      hint.textContent = 'M908: enter an actual DPI value (e.g. 2200) or raw bytecode (e.g. 0x4a01)';
+    } else if(model === 'm607'){
+      scrollRow.style.display = 'flex';
+      hint.textContent = 'M607: enter an actual DPI value 100–10000 (e.g. 3000) or raw bytecode (e.g. 0x2d00)';
+    } else {
+      scrollRow.style.display = 'flex';
+      hint.textContent = 'This model only accepts raw bytecode DPI values (e.g. 0x1600)';
+    }
+  }
+  updateHex();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,33 @@
+model: "990chroma"
+usb:
+  vid: 0x04d9
+  pids: [0xfc41]
+num_profiles: 5
+num_macro_slots: 15
+led:
+  lightmodes: [breathing, breathing_rainbow, rainbow, static, wave,
+               alternating, reactive, reactive_button, flashing, "off", random]
+  brightness_range: [1, 3]
+  speed_range: [1, 8]
+  speed_readback_reliable: false
+  scrollspeed_range: [1, 0x3f]
+  scrollspeed_readback_reliable: false
+report_rates: [125, 250, 500, 1000]
+dpi:
+  formats: [bytecode]        # no _c_dpi_codes table implemented for this model -- raw only
+  num_slots: 5
+  min_enabled: 1
+buttons:
+  supported: false           # v2
+  count: 25
+  names: [button_left, button_right, button_middle, button_fire, button_dpi_up,
+          button_dpi_down, button_mode, button_1, button_2, button_3, button_4,
+          button_5, button_6, button_7, button_8, button_9, button_10,
+          button_11, button_12, button_13, button_14, button_15, button_16,
+          scroll_up, scroll_down]
+macros:
+  supported: false           # v2
+quirks:
+  - "USB packet tables show richer RGB-effect encoding than plain M908 (extra
+     color/effect bytes per lightmode), consistent with the Chroma/RGB branding."
+  - "Unlike M908, has no decimal-DPI lookup table -- only raw bytecode 0x[04-8c][00-01] works."

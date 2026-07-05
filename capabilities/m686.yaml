@@ -1,0 +1,34 @@
+model: "686"
+usb:
+  vid: 0x25a7                # different vendor -- wireless mouse family, distinct from the 0x04d9 Holtek mice
+  pids: [0xfa34, 0xfa35]     # wireless, wired
+num_profiles: 2              # not 5 -- own m686_profile enum
+num_macro_slots: 15
+led:
+  lightmodes: ["off", static, breathing, rainbow]   # own restricted enum, not the shared 11-value set
+  brightness_range: [0, 255]                       # overridden from the 1-3 baseline
+  speed_range: [1, 8]
+  speed_readback_reliable: false
+  scrollspeed_range: null     # not exposed at all: no read value, no warning, no UI field
+  scrollspeed_readback_reliable: null
+report_rates: [125, 250, 500, 1000]
+dpi:
+  formats: [actual]           # decimal only -- raw-bytecode branch exists in source but is commented out
+  actual_range: [100, 16000]
+  actual_step_breakpoints: [[100, 16000, 100]]
+  num_slots: 5
+  min_enabled: 1
+buttons:
+  supported: false           # v2
+  count: 8                   # 12 declared, 4 are literal "ignore" placeholders
+  names: [button_left, button_right, button_middle, button_side_1, button_side_3,
+          button_side_2, button_dpi_up, button_dpi_down]
+macros:
+  supported: false           # v2
+quirks:
+  - "set_lightmode silently maps any lightmode outside {off, static, breathing, rainbow}
+     to static -- unlike the 0x04d9 mice, client-side lightmode restriction is warranted
+     here rather than deferring entirely to the CLI (design doc §3.2's 'no restriction'
+     approach doesn't hold for this model)."
+  - "read_settings() is stubbed (\"currently not implemented\"); read_and_print_settings()
+     (used by -R) does work, just without a scrollspeed field."

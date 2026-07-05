@@ -1,0 +1,32 @@
+model: "607"
+usb:
+  vid: 0x04d9
+  pids: [0xfc38]
+num_profiles: 5
+num_macro_slots: 15
+led:
+  lightmodes: [breathing, breathing_rainbow, rainbow, static, wave,
+               alternating, reactive, reactive_button, flashing, "off", random]
+  brightness_range: [1, 3]
+  speed_range: [1, 8]
+  speed_readback_reliable: false
+  scrollspeed_range: [1, 0x3f]
+  scrollspeed_readback_reliable: false
+report_rates: [125, 250, 500, 1000]
+dpi:
+  formats: [actual, bytecode]
+  actual_range: [100, 7200]
+  actual_step_breakpoints: [[100, 5000, 100], [5200, 7200, 200]]
+  num_slots: 5
+  min_enabled: 1
+buttons:
+  supported: false           # v2
+  count: 9
+  names: [button_left, button_right, button_middle, button_forward,
+          button_backward, button_dpi, button_lightmode, scroll_up, scroll_down]
+macros:
+  supported: false           # v2
+quirks:
+  - "example_m607.ini's own comment and upstream docs claim actual DPI range 100-10000,
+     but the implemented _c_dpi_codes lookup table (include/m607/data.cpp) only goes up
+     to 7200 -- 10000 is aspirational/incorrect, 7200 is what the tool actually accepts."
