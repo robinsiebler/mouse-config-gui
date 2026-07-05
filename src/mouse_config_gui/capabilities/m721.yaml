@@ -19,12 +19,12 @@ dpi:
   num_slots: 5
   min_enabled: 1
 buttons:
-  supported: false           # v2
+  supported: true
   count: 10
   names: [button_left, button_right, button_middle, button_fire, button_forward,
           button_backward, button_lightmode, button_dpi, scroll_up, scroll_down]
 macros:
-  supported: false           # v2
+  supported: true
 quirks:
   - "include/m721/data.cpp has a full decimal-DPI table written out but commented
      out wholesale and marked TODO! -- decimal DPI input silently never matches, so

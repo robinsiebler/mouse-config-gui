@@ -19,13 +19,13 @@ dpi:
   num_slots: 5
   min_enabled: 1
 buttons:
-  supported: false           # v2
+  supported: true
   count: 16
   names: [button_1, button_2, button_3, button_4, button_5, button_6,
           button_right, button_left, button_7, button_8, button_middle,
           button_fire, button_9, button_10, button_11, button_12]
 macros:
-  supported: false           # v2
+  supported: true
 quirks:
   - "set_lightmode silently maps any lightmode outside {off, static, breathing, rainbow}
      to static -- client-side lightmode restriction is warranted here, unlike the

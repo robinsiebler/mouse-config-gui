@@ -18,11 +18,11 @@ dpi:
   num_slots: 5
   min_enabled: 1
 buttons:
-  supported: false           # v2
+  supported: true
   count: 8
   names: [button_left, button_right, button_middle, button_forward,
           button_backward, button_dpi, scroll_up, scroll_down]
 macros:
-  supported: false           # v2
+  supported: true
 quirks:
   - "Unlike M908, has no decimal-DPI lookup table -- only raw bytecode 0x[04-8c][00-01] works."

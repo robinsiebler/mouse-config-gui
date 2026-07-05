@@ -21,13 +21,13 @@ dpi:
   min_enabled: 1
   per_axis: true            # uniquely among these models: also accepts "X<n>Y<m>" for independent X/Y DPI
 buttons:
-  supported: false           # v2
+  supported: true
   count: 10
   names: [button_left, button_right, button_middle, button_forward,
           button_backward, button_dpi, button_dpi_up, button_dpi_down,
           button_lightmode, scroll_up]
 macros:
-  supported: false           # v2
+  supported: true
 quirks:
   - "Most flexible DPI input of any model: accepts 0x[4-hex] (raw, shared X/Y), 0x[8-hex]
      (raw, separate X/Y), plain decimal (shared X/Y), and \"X<n>Y<m>\" (independent

@@ -1,0 +1,37 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same approach the README's "Development setup" documents locally:
+      # PyGObject comes from the distro's system package, not a pip build.
+      # A prior version of this workflow tried apt-get'ing PyGObject's build
+      # deps (libgirepository1.0-dev et al) and building it via pip -- that
+      # broke because pip resolved the latest PyGObject (3.56), which now
+      # requires girepository-2.0, a very recent GObject-Introspection split
+      # not reliably available under a predictable -dev package name across
+      # runner images. Sidestepping the pip build entirely avoids chasing
+      # that moving target, and matches how a real Linux user actually sets
+      # this project up (README explicitly avoids the PySide6/PyQt6-style
+      # "pull a large pip wheel" approach for exactly this reason).
+      - name: Install system PyGObject/GTK4/libadwaita
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adw-1 python3-venv
+
+      - name: Create venv with system site-packages and install
+        run: |
+          python3 -m venv --system-site-packages .venv
+          source .venv/bin/activate
+          pip install -e ".[dev]"
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Run tests
+        run: pytest

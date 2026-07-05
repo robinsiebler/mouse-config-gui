@@ -1,18 +1,19 @@
 """Custom INI parser/writer for mouse_m908 config files (design doc §4.1, §8).
 
 Not configparser: configparser drops comments, and this format's comments carry
-real metadata (`# Model:`, `# Currently active profile:`) as well as data v1
-doesn't model at all (macro comment blocks). Round-trip guarantee is about DATA,
-not bytes: button_* lines and macro blocks come back out verbatim, but decorative
-comments explaining field meaning/ranges are not preserved on save -- mouse_m908's
-own -R output doesn't preserve them either (it always emits its own fixed set of
-comments), so there's nothing canonical to round-trip there.
+real metadata (`# Model:`, `# Currently active profile:`) as well as data encoded
+entirely as comments (`;##`/`;#` macro blocks). Round-trip guarantee is about DATA,
+not bytes: button_* lines are parsed into ProfileConfig.buttons and macro blocks
+into MouseConfig.macros, but decorative comments explaining field meaning/ranges
+are not preserved on save -- mouse_m908's own -R output doesn't preserve them
+either (it always emits its own fixed set of comments), so there's nothing
+canonical to round-trip there.
 """
 
 import re
 from pathlib import Path
 
-from mouse_config_gui.models import DpiSlot, MouseConfig, ProfileConfig
+from mouse_config_gui.models import DpiSlot, MacroAction, MouseConfig, ProfileConfig
 
 NUM_PROFILES = 5
 
@@ -21,6 +22,7 @@ _MODEL_RE = re.compile(r"^#\s*Model:\s*(\S+)")
 _ACTIVE_PROFILE_RE = re.compile(r"^#\s*Currently active profile:\s*(\d+)")
 _ACTIVE_DPI_RE = re.compile(r"^#\s*Active dpi level(?: for this profile)?:\s*(\d+)")
 _MACRO_HEADER_RE = re.compile(r"^;##\s*macro(\d+)$")
+_MACRO_ACTION_RE = re.compile(r"^;#\s*(\S+)\t(.*)$")
 _DPI_ENABLE_RE = re.compile(r"^dpi([1-5])_enable$")
 _DPI_VALUE_RE = re.compile(r"^dpi([1-5])$")
 
@@ -45,8 +47,9 @@ def load(path: Path) -> MouseConfig:
             config.macros[current_macro] = []
             current_profile = None
             continue
-        if current_macro is not None and line.startswith(";#"):
-            config.macros[current_macro].append(line)
+        if current_macro is not None and (match := _MACRO_ACTION_RE.match(line)):
+            kind, value = match.groups()
+            config.macros[current_macro].append(MacroAction(kind=kind, value=value))
             continue
 
         if line.startswith("#"):
@@ -83,7 +86,7 @@ def load(path: Path) -> MouseConfig:
         elif match := _DPI_VALUE_RE.match(key):
             dpi_values.setdefault(current_profile, {})[int(match.group(1))] = value
         else:
-            profile.raw[key] = value
+            profile.buttons[key] = value
 
     for num in range(1, NUM_PROFILES + 1):
         profile = profiles.setdefault(num, ProfileConfig())
@@ -134,7 +137,7 @@ def save(config: MouseConfig, path: Path) -> None:
             if slot.value:
                 lines.append(f"dpi{slot_num}={slot.value}")
 
-        for key, value in profile.raw.items():
+        for key, value in profile.buttons.items():
             lines.append(f"{key}={value}")
 
     if config.macros:
@@ -142,6 +145,7 @@ def save(config: MouseConfig, path: Path) -> None:
         for macro_num in sorted(config.macros):
             lines.append("")
             lines.append(f";## macro{macro_num}")
-            lines.extend(config.macros[macro_num])
+            for action in config.macros[macro_num]:
+                lines.append(f";# {action.kind}\t{action.value}")
 
     path.write_text("\n".join(lines) + "\n")

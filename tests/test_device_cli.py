@@ -98,6 +98,19 @@ def test_apply_config_omits_model_flag_when_none(monkeypatch):
     assert captured["argv"] == ["mouse_m908", "-c", "/tmp/config.ini"]
 
 
+def test_apply_macros_builds_correct_argv(monkeypatch):
+    captured = {}
+
+    def fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        return FakeResult()
+
+    monkeypatch.setattr(device_cli.subprocess, "run", fake_run)
+    device_cli.apply_macros(Path("/tmp/config.ini"), model="908")
+
+    assert captured["argv"] == ["mouse_m908", "-m", "/tmp/config.ini", "-M", "908"]
+
+
 def test_read_config_builds_correct_argv(monkeypatch):
     captured = {}
 

@@ -18,7 +18,7 @@ dpi:
   num_slots: 5
   min_enabled: 1
 buttons:
-  supported: false           # v2
+  supported: true
   count: 26
   names: [button_left, button_right, button_middle, button_fire, button_dpi_up,
           button_dpi_down, button_1, button_2, button_3, button_4, button_5,
@@ -26,7 +26,7 @@ buttons:
           button_12, button_13, button_14, button_15, button_16, button_mode,
           button_profile, scroll_up, scroll_down]
 macros:
-  supported: false           # v2
+  supported: true
 quirks:
   - "include/m990/data.cpp leaves _c_dpi_codes empty with a comment: 'Take a look at
      the M908 implementation for details. Min. 50, Max. 16400' -- decimal DPI was

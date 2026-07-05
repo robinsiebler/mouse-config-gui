@@ -20,12 +20,12 @@ dpi:
   num_slots: 5
   min_enabled: 1
 buttons:
-  supported: false           # v2
+  supported: true
   count: 9
   names: [button_left, button_right, button_middle, button_forward,
           button_backward, button_dpi, button_lightmode, scroll_up, scroll_down]
 macros:
-  supported: false           # v2
+  supported: true
 quirks:
   - "example_m607.ini's own comment and upstream docs claim actual DPI range 100-10000,
      but the implemented _c_dpi_codes lookup table (include/m607/data.cpp) only goes up

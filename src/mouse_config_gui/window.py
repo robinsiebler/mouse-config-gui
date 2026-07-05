@@ -11,10 +11,13 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from mouse_config_gui import capability, device_cli, ini_io
+from mouse_config_gui.button_group import ButtonGroup
 from mouse_config_gui.dpi_group import DpiGroup, NUM_DPI_SLOTS
 from mouse_config_gui.ini_io import NUM_PROFILES
+from mouse_config_gui.keymap import is_valid_macro_action
 from mouse_config_gui.led_group import LedGroup
-from mouse_config_gui.models import DpiSlot, MouseConfig, ProfileConfig
+from mouse_config_gui.macro_editor import MacroEditorDialog
+from mouse_config_gui.models import DpiSlot, MacroAction, MouseConfig, ProfileConfig
 from mouse_config_gui.performance_group import PerformanceGroup
 
 _DEFAULT_SWATCH_COLOR = "9a9996"  # neutral gray until a profile's real LED color is loaded
@@ -29,6 +32,9 @@ class MainWindow(Adw.ApplicationWindow):
         self._loaded_config: MouseConfig | None = None
         self._current_file_path: Path | None = None
         self._dirty = False
+        # Shared across all 5 profiles (MouseConfig-level, not per-profile,
+        # unlike LED/DPI/Buttons) -- mutated in place by MacroEditorDialog.
+        self._macros: dict[int, list[MacroAction]] = {}
 
         self.profile_stack = Adw.ViewStack()
         self._swatch_provider = Gtk.CssProvider()
@@ -74,7 +80,18 @@ class MainWindow(Adw.ApplicationWindow):
         menu_button.set_tooltip_text("Config file")
         header_bar.pack_end(menu_button)
 
+        # pack_start (opposite side from the file menu) so this doesn't disturb
+        # _build_actions_row()'s existing 3-widget/2-spacer symmetry below.
+        macros_button = Gtk.Button(label="Macros…")
+        macros_button.set_tooltip_text("Edit the shared 15-slot macro store")
+        macros_button.connect("clicked", self._on_macros_clicked)
+        header_bar.pack_start(macros_button)
+
         return header_bar
+
+    def _on_macros_clicked(self, _button: Gtk.Button) -> None:
+        dialog = MacroEditorDialog(self._macros, on_changed=self._mark_dirty)
+        dialog.present(self)
 
     def _setup_file_actions(self) -> None:
         open_action = Gio.SimpleAction.new("open-config", None)
@@ -233,6 +250,8 @@ class MainWindow(Adw.ApplicationWindow):
             performance_group.apply_capability(cap)
         for dpi_group in self.dpi_groups.values():
             dpi_group.apply_capability(cap)
+        for button_group in self.button_groups.values():
+            button_group.apply_capability(cap)
 
     def _build_profile_switcher(self) -> Gtk.Widget:
         """5 fixed profile tabs, each with a color swatch tinted to that
@@ -248,6 +267,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.led_groups: dict[int, LedGroup] = {}
         self.performance_groups: dict[int, PerformanceGroup] = {}
         self.dpi_groups: dict[int, DpiGroup] = {}
+        self.button_groups: dict[int, ButtonGroup] = {}
         self._swatches: dict[int, Gtk.Widget] = {}
         self._profile_buttons: dict[int, Gtk.ToggleButton] = {}
         first_button: Gtk.ToggleButton | None = None
@@ -260,12 +280,14 @@ class MainWindow(Adw.ApplicationWindow):
             self.performance_groups[num] = performance_group
             dpi_group = DpiGroup(initial_capability, on_changed=self._mark_dirty)
             self.dpi_groups[num] = dpi_group
+            button_group = ButtonGroup(initial_capability, on_changed=self._mark_dirty)
+            self.button_groups[num] = button_group
 
             page = Adw.PreferencesPage()
             page.add(led_group)
             page.add(performance_group)
             page.add(dpi_group)
-            page.add(self._build_buttons_group())
+            page.add(button_group)
             self.profile_stack.add_titled(page, page_name, f"Profile {num}")
 
             swatch = Gtk.Box(width_request=12, height_request=12)
@@ -290,15 +312,6 @@ class MainWindow(Adw.ApplicationWindow):
             first_button.set_active(True)
 
         return box
-
-    @staticmethod
-    def _build_buttons_group() -> Adw.PreferencesGroup:
-        """Placeholder so the page layout doesn't need rework when button
-        mapping/macro editing lands in v2 (design doc §5, §10)."""
-        group = Adw.PreferencesGroup(title="Buttons")
-        group.add(Adw.ActionRow(title="Button Mapping", subtitle="Coming in a future version"))
-        group.set_sensitive(False)
-        return group
 
     def _on_profile_button_toggled(self, button: Gtk.ToggleButton, page_name: str) -> None:
         if button.get_active():
@@ -334,20 +347,20 @@ class MainWindow(Adw.ApplicationWindow):
     # -- UI <-> MouseConfig ------------------------------------------------------
 
     def _collect_config(self) -> MouseConfig:
-        """Read all 5 profiles' widget state into a MouseConfig, preserving
-        unmodeled data (raw button mappings, macros) from the last-loaded
-        config so Apply doesn't silently drop what v1 doesn't edit (§8)."""
+        """Read all 5 profiles' widget state, plus the shared macro store,
+        into a MouseConfig."""
         base = self._loaded_config if self._loaded_config is not None else MouseConfig()
         config = MouseConfig(
             model=self._current_capability().model,
             active_profile=base.active_profile,
-            macros=dict(base.macros),
+            macros=dict(self._macros),
         )
 
         for num in range(1, NUM_PROFILES + 1):
             led = self.led_groups[num]
             perf = self.performance_groups[num]
             dpi = self.dpi_groups[num]
+            buttons = self.button_groups[num]
             base_profile = base.profiles[num - 1] if len(base.profiles) >= num else ProfileConfig()
 
             config.profiles.append(
@@ -363,7 +376,7 @@ class MainWindow(Adw.ApplicationWindow):
                         for slot in range(1, NUM_DPI_SLOTS + 1)
                     ],
                     active_dpi_slot=base_profile.active_dpi_slot,
-                    raw=dict(base_profile.raw),
+                    buttons=dict(buttons.mappings),
                 )
             )
 
@@ -371,12 +384,14 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _populate_from_config(self, config: MouseConfig) -> None:
         self._loaded_config = config
+        self._macros = dict(config.macros)
 
         for num in range(1, NUM_PROFILES + 1):
             profile = config.profiles[num - 1] if len(config.profiles) >= num else ProfileConfig()
             led = self.led_groups[num]
             perf = self.performance_groups[num]
             dpi = self.dpi_groups[num]
+            self.button_groups[num].set_mappings(profile.buttons)
 
             if profile.lightmode is not None:
                 try:
@@ -431,6 +446,28 @@ class MainWindow(Adw.ApplicationWindow):
             if not row.is_valid
         ]
 
+    def _find_invalid_button_rows(self) -> list[tuple[int, str]]:
+        return [
+            (profile_num, name)
+            for profile_num, button_group in self.button_groups.items()
+            for name in button_group.invalid_names
+        ]
+
+    def _find_invalid_macro_slots(self) -> list[int]:
+        # Unlike DPI/button rows, macro actions aren't all editor-validated
+        # on the way in -- a loaded file's macro data goes straight into
+        # self._macros without passing through is_valid_macro_action() until
+        # someone opens that slot in the editor. Re-check everything here so
+        # a slot nobody ever opened can't reach mouse_m908 unvalidated.
+        return sorted(
+            {
+                slot
+                for slot, actions in self._macros.items()
+                for action in actions
+                if not is_valid_macro_action(action.kind, action.value)
+            }
+        )
+
     def _show_invalid_dpi_toast(self, invalid: list[tuple[int, int]]) -> None:
         # mouse_m908 doesn't error out on a bad DPI value -- it just prints a
         # warning to stderr and silently skips that slot, and our own
@@ -470,10 +507,58 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.toast_overlay.add_toast(toast)
 
+    def _show_invalid_button_toast(self, invalid: list[tuple[int, str]]) -> None:
+        by_profile: dict[int, list[str]] = {}
+        for profile_num, name in invalid:
+            by_profile.setdefault(profile_num, []).append(
+                self.button_groups[profile_num].rows[name].get_title()
+            )
+        location_text = "; ".join(
+            f"Profile {p}: {', '.join(names)}" for p, names in sorted(by_profile.items())
+        )
+
+        label = Gtk.Label(label=f"Fix invalid button mappings before applying — {location_text}")
+        label.set_wrap(True)
+        label.set_max_width_chars(36)
+        label.set_xalign(0)
+
+        toast = Adw.Toast()
+        toast.set_custom_title(label)
+        toast.set_button_label("Go to Profile")
+        first_profile = invalid[0][0]
+        toast.connect(
+            "button-clicked", lambda _t: self._profile_buttons[first_profile].set_active(True)
+        )
+        self.toast_overlay.add_toast(toast)
+
+    def _show_invalid_macro_toast(self, invalid_slots: list[int]) -> None:
+        location_text = ", ".join(f"Macro {slot}" for slot in invalid_slots)
+
+        label = Gtk.Label(label=f"Fix invalid macro actions before applying — {location_text}")
+        label.set_wrap(True)
+        label.set_max_width_chars(36)
+        label.set_xalign(0)
+
+        toast = Adw.Toast()
+        toast.set_custom_title(label)
+        toast.set_button_label("Open Macros")
+        toast.connect("button-clicked", lambda _t: self._on_macros_clicked(None))
+        self.toast_overlay.add_toast(toast)
+
     def _on_apply_clicked(self, _button: Gtk.Button) -> None:
-        invalid = self._find_invalid_dpi_rows()
-        if invalid:
-            self._show_invalid_dpi_toast(invalid)
+        invalid_dpi = self._find_invalid_dpi_rows()
+        if invalid_dpi:
+            self._show_invalid_dpi_toast(invalid_dpi)
+            return
+
+        invalid_buttons = self._find_invalid_button_rows()
+        if invalid_buttons:
+            self._show_invalid_button_toast(invalid_buttons)
+            return
+
+        invalid_macro_slots = self._find_invalid_macro_slots()
+        if invalid_macro_slots:
+            self._show_invalid_macro_toast(invalid_macro_slots)
             return
 
         config = self._collect_config()
@@ -489,6 +574,9 @@ class MainWindow(Adw.ApplicationWindow):
         def work():
             try:
                 device_cli.apply_config(tmp_path, model=model)
+                # -c never touches macros -- separate transfer, same file
+                # (already contains the ;## macroN blocks ini_io.save() wrote).
+                device_cli.apply_macros(tmp_path, model=model)
             finally:
                 tmp_path.unlink(missing_ok=True)
 
