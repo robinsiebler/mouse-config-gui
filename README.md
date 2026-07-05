@@ -20,15 +20,19 @@ for a UI mockup.
 ## Install
 
 ```sh
-python3 -m venv --system-site-packages .venv
-source .venv/bin/activate
-pip install git+https://github.com/robinsiebler/mouse-config-gui.git
+pip install --user git+https://github.com/robinsiebler/mouse-config-gui.git
+```
+
+After installing:
+
+```sh
 mouse-config-gui
 ```
 
-`--system-site-packages` is required so the venv can see the system-installed
-PyGObject/GTK4 -- pip can't build those from source without the underlying C
-libraries (cairo, girepository, etc.) present, so don't skip this flag.
+`--user` installs alongside your system Python rather than into an isolated
+venv, so it picks up the system-installed PyGObject/GTK4 instead of trying
+(and failing) to build them from source, and the `mouse-config-gui` command
+lands in `~/.local/bin`, which is on `PATH` by default on most distros.
 
 ## Development setup
 
