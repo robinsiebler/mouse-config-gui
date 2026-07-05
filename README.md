@@ -9,6 +9,13 @@ See [`design_docs/mouse-config-gui-design.md`](design_docs/mouse-config-gui-desi
 the full design, and [`design_docs/mouse_gui_mockup.html`](design_docs/mouse_gui_mockup.html)
 for a UI mockup.
 
+## Status
+
+Only tested against a real **Redragon M908**. Capability data (LED modes,
+DPI ranges, USB ids, etc.) for the other 11 models `mouse_m908` supports was
+derived directly from its C++ source, not verified against real hardware --
+if something's wrong for your model, please open an issue.
+
 ## Requirements
 
 - Python 3.10+
