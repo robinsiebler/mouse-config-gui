@@ -10,7 +10,7 @@ file with real widgets (color pickers, dropdowns, validated inputs) instead of h
 editing text, then shells out to the CLI to apply changes.
 
 **v1 scope:** LED settings, DPI settings, report rate, profile management (read/apply/switch).
-**Deferred to v2:** button mapping and macro editing (see §10).
+**v2 scope:** button mapping and macro editing, both now implemented (see §10).
 
 ## 2. Why GTK4 + libadwaita
 
@@ -254,18 +254,26 @@ so adding a new mouse later is just dropping in a new YAML file — no Python ch
 no separate `-M` name-mapping step since the descriptor's `model:` field *is* the `-M`
 argument.
 
-## 10. Deferred to v2: button mapping & macros
+## 10. v2: button mapping & macros (originally deferred, now implemented)
 
-Explicitly out of scope for v1 per your call — flagged here so the data layer (§8)
-doesn't paint us into a corner:
-- Button mapping editor: needs the full valid-key list from `keymap.md` (ideally parsed
-  at runtime from the installed doc path rather than hardcoded, so it stays correct across
-  `mouse_m908` versions), a way to express the `fire:key:count:interval` structured action,
-  key-combo strings (`super_l+shift_l+2`), and special tokens (`dpi+`, `dpi-cycle`,
-  `report_rate+/-`, `profile_switch`, `macro<N>` references).
-- Macro editor: a recorder/sequencer for the shared 15-slot, 67-action-max macro store,
-  supporting `down`/`up`/`delay`/`move_*` actions, in both the old one-macro-per-file format
-  and the new inline `;##`/`;#` comment format.
+Originally out of scope for v1 per this doc's original call; both shipped in v2:
+- **Button mapping editor** (`button_group.py`, `button_picker.py`, `keymap.py`,
+  `keymap_data.yaml`): a validated freeform entry per button plus a categorized
+  "Choose…" picker, covering the full grammar from `keymap.md` -- plain keys,
+  key combos (`super_l+shift_l+2`), `fire:button:repeats:delay`,
+  `snipe:dpi`, `macro<N>` references, and the special/media/compatibility
+  tokens. Grammar data and byte-level ranges were verified directly against
+  `mouse_m908`'s C++ source (not just this doc or `keymap.md`), which turned
+  up a few corrections along the way -- e.g. fire's repeats/delay actually
+  accept 0-255 (a plain `uint8_t` cast), not the 1-255 `keymap.md` documents.
+- **Macro editor** (`macro_editor.py`): a manual sequencer (add/remove/reorder,
+  no live key-capture recording) for the shared 15-slot macro store, supporting
+  `down`/`up`/`delay`/`move_*` actions via the new inline `;##`/`;#` comment
+  format (the old one-macro-per-file format isn't exposed in the GUI -- the
+  app always transfers all 15 slots together via `mouse_m908 -m`). The byte
+  budget actually allows **69 actions per macro**, not the 67 this doc
+  originally guessed -- confirmed by simulating `_i_encode_macro`'s offset
+  arithmetic against the real source.
 
 ## 11. Open questions before implementation — resolved
 

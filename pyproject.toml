@@ -23,4 +23,4 @@ mouse-config-gui = "mouse_config_gui.main:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-mouse_config_gui = ["capabilities/*.yaml"]
+mouse_config_gui = ["capabilities/*.yaml", "keymap_data.yaml"]

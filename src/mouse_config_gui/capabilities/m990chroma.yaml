@@ -18,7 +18,7 @@ dpi:
   num_slots: 5
   min_enabled: 1
 buttons:
-  supported: false           # v2
+  supported: true
   count: 25
   names: [button_left, button_right, button_middle, button_fire, button_dpi_up,
           button_dpi_down, button_mode, button_1, button_2, button_3, button_4,
@@ -26,7 +26,7 @@ buttons:
           button_11, button_12, button_13, button_14, button_15, button_16,
           scroll_up, scroll_down]
 macros:
-  supported: false           # v2
+  supported: true
 quirks:
   - "USB packet tables show richer RGB-effect encoding than plain M908 (extra
      color/effect bytes per lightmode), consistent with the Chroma/RGB branding."

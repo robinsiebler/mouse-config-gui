@@ -19,12 +19,12 @@ dpi:
   num_slots: 5
   min_enabled: 1
 buttons:
-  supported: false           # v2
+  supported: true
   count: 8                   # 12 declared, 4 are literal "ignore" placeholders
   names: [button_left, button_right, button_middle, button_side_1, button_side_3,
           button_side_2, button_dpi_up, button_dpi_down]
 macros:
-  supported: false           # v2
+  supported: true
 quirks:
   - "set_lightmode silently maps any lightmode outside {off, static, breathing, rainbow}
      to static -- unlike the 0x04d9 mice, client-side lightmode restriction is warranted

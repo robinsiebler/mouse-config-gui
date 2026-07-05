@@ -20,13 +20,13 @@ dpi:
   num_slots: 5
   min_enabled: 1             # can't disable all 5
 buttons:
-  supported: false           # v2
+  supported: true
   count: 20
   names: [button_left, button_right, button_middle, button_fire, button_dpi_up,
           button_dpi_down, button_1, button_2, button_3, button_4, button_5,
           button_6, button_7, button_8, button_9, button_10, button_11,
           button_12, scroll_up, scroll_down]
 macros:
-  supported: false           # v2
+  supported: true
 quirks:
   - "Reference/baseline implementation that most other m908-family models' DPI and lightmode code is copy-derived from."

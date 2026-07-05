@@ -87,6 +87,22 @@ def apply_config(path: Path, model: str | None = None) -> None:
     _run(args)
 
 
+def apply_macros(path: Path, model: str | None = None) -> None:
+    """mouse_m908 -m <path> [-M <model>].
+
+    -c never touches macros -- this is a separate transfer. -m scans path
+    for `;## macroN` / `;# ...` blocks and ignores everything else, so the
+    same file already written for apply_config() (which contains both the
+    [profileN] sections and the macro blocks) can be reused here unchanged.
+    This resyncs all 15 macro slots: any slot without a `;## macroN` block
+    in path gets cleared to empty (verified in mouse_m908's set_all_macros).
+    """
+    args = ["-m", str(path)]
+    if model is not None:
+        args += ["-M", model]
+    _run(args)
+
+
 def read_config(path: Path, model: str | None = None) -> None:
     """mouse_m908 -R <path> [-M <model>]"""
     args = ["-R", str(path)]
