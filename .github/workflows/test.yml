@@ -7,37 +7,31 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.12"]
-
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      # None of tests/*.py import gi/Gtk (deliberate -- widget modules like
-      # window.py/button_group.py have no dedicated tests, only the
-      # pure-Python core does), so no display/Xvfb is needed here. These
-      # packages are only to let `pip install` build PyGObject itself, which
-      # is a hard dependency in pyproject.toml regardless -- same system
-      # packages the README's "Requirements" section already documents for
-      # local dev.
-      - name: Install PyGObject/GTK4 build dependencies
+      # Same approach the README's "Development setup" documents locally:
+      # PyGObject comes from the distro's system package, not a pip build.
+      # A prior version of this workflow tried apt-get'ing PyGObject's build
+      # deps (libgirepository1.0-dev et al) and building it via pip -- that
+      # broke because pip resolved the latest PyGObject (3.56), which now
+      # requires girepository-2.0, a very recent GObject-Introspection split
+      # not reliably available under a predictable -dev package name across
+      # runner images. Sidestepping the pip build entirely avoids chasing
+      # that moving target, and matches how a real Linux user actually sets
+      # this project up (README explicitly avoids the PySide6/PyQt6-style
+      # "pull a large pip wheel" approach for exactly this reason).
+      - name: Install system PyGObject/GTK4/libadwaita
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            libgirepository1.0-dev \
-            gir1.2-gtk-4.0 \
-            gir1.2-adw-1 \
-            libcairo2-dev \
-            pkg-config \
-            python3-dev
+          sudo apt-get install -y python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adw-1 python3-venv
 
-      - name: Install package
-        run: pip install -e ".[dev]"
+      - name: Create venv with system site-packages and install
+        run: |
+          python3 -m venv --system-site-packages .venv
+          source .venv/bin/activate
+          pip install -e ".[dev]"
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Run tests
         run: pytest
