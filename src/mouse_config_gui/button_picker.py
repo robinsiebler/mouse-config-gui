@@ -189,7 +189,7 @@ def selected_dropdown_string(dropdown: Gtk.DropDown) -> str:
     return item.get_string() if item is not None else ""
 
 
-def _list_popover(items: list[tuple[str, str]], on_pick, *, show_value_tooltip: bool = False) -> Gtk.Popover:
+def _list_box(items: list[tuple[str, str]], on_pick, *, show_value_tooltip: bool = False) -> Gtk.Widget:
     """items: list of (label, value) pairs; clicking a row picks its value.
 
     show_value_tooltip: when the label is a friendly rewrite of the value
@@ -200,8 +200,11 @@ def _list_popover(items: list[tuple[str, str]], on_pick, *, show_value_tooltip: 
     for label, value in items:
         tooltip = value if show_value_tooltip and label != value else None
         box.append(_leaf_button(label, value, on_pick, tooltip=tooltip))
-    popover = Gtk.Popover(child=_scrolled(box))
-    return popover
+    return box
+
+
+def _list_popover(items: list[tuple[str, str]], on_pick, *, show_value_tooltip: bool = False) -> Gtk.Popover:
+    return Gtk.Popover(child=_scrolled(_list_box(items, on_pick, show_value_tooltip=show_value_tooltip)))
 
 
 def _advanced_popover(on_pick) -> Gtk.Popover:
@@ -299,10 +302,23 @@ def _fire_key_popover(on_pick) -> Gtk.Popover:
     return Gtk.Popover(child=box)
 
 
-def build_picker_button(on_pick, num_macro_slots: int) -> Gtk.MenuButton:
+def _macro_items(macro_names: dict[int, str], num_macro_slots: int) -> list[tuple[str, str]]:
+    return [
+        (f"{macro_names[n]} (Macro {n})" if macro_names.get(n) else f"Macro {n}", f"macro{n}")
+        for n in range(1, num_macro_slots + 1)
+    ]
+
+
+def build_picker_button(on_pick, num_macro_slots: int, macro_names: dict[int, str]) -> Gtk.MenuButton:
     """A "Choose…" button whose popover offers every mapping category,
     calling on_pick(value) and collapsing the whole menu when a value is
     picked (single- or multi-level).
+
+    macro_names: the same live dict MainWindow/MacroEditorDialog mutate in
+    place -- captured once here at ButtonRow-construction time, so the Macro
+    submenu is rebuilt from current names each time the root popover opens
+    (see refresh_macro_submenu below) rather than frozen at whatever names
+    existed when this button was first built.
     """
     data = grammar_data()
     root_popover = Gtk.Popover()
@@ -333,12 +349,18 @@ def build_picker_button(on_pick, num_macro_slots: int) -> Gtk.MenuButton:
             show_value_tooltip=True,
         ),
     ))
-    root_box.append(_submenu_button(
-        "Macro",
-        _list_popover(
-            [(f"Macro {n}", f"macro{n}") for n in range(1, num_macro_slots + 1)], pick
-        ),
-    ))
+    macro_popover = Gtk.Popover()
+
+    def refresh_macro_submenu(*_args) -> None:
+        items = _macro_items(macro_names, num_macro_slots)
+        macro_popover.set_child(_scrolled(_list_box(items, pick, show_value_tooltip=True)))
+
+    refresh_macro_submenu()
+    # Rebuilt every time the root menu opens, not just once at construction,
+    # so a name typed in the Macro editor shows up here without needing to
+    # rebuild this whole picker (e.g. by switching models and back).
+    root_popover.connect("show", refresh_macro_submenu)
+    root_box.append(_submenu_button("Macro", macro_popover))
     root_box.append(_submenu_button("Fire Key…", _fire_key_popover(pick)))
     root_box.append(_submenu_button(
         "DPI Switch",

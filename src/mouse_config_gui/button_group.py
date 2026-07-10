@@ -73,13 +73,13 @@ def _humanize(name: str) -> str:
 class ButtonRow(Adw.EntryRow):
     """One button's mapping, validated live against keymap.py's grammar."""
 
-    def __init__(self, name: str, num_macro_slots: int, on_changed=None):
+    def __init__(self, name: str, num_macro_slots: int, macro_names: dict[int, str], on_changed=None):
         super().__init__(title=_humanize(name))
         self.name = name
         self._num_macro_slots = num_macro_slots
         self._on_changed = on_changed
 
-        self.add_suffix(build_picker_button(self._on_picked, num_macro_slots))
+        self.add_suffix(build_picker_button(self._on_picked, num_macro_slots, macro_names))
         self.connect("changed", self._on_text_changed)
 
     def _on_picked(self, value: str) -> None:
@@ -111,9 +111,10 @@ class ButtonRow(Adw.EntryRow):
 
 
 class ButtonGroup(Adw.PreferencesGroup):
-    def __init__(self, capability: Capability, on_changed=None, **kwargs):
+    def __init__(self, capability: Capability, macro_names: dict[int, str], on_changed=None, **kwargs):
         super().__init__(title="Buttons", **kwargs)
         self.set_header_suffix(_build_help_button())
+        self._macro_names = macro_names
         self._on_changed = on_changed
         self.rows: dict[str, ButtonRow] = {}
         # Mapping keys loaded from a config whose button set doesn't match the
@@ -137,7 +138,7 @@ class ButtonGroup(Adw.PreferencesGroup):
         self.rows = {}
 
         for name in names:
-            row = ButtonRow(name, num_macro_slots, on_changed=self._notify_changed)
+            row = ButtonRow(name, num_macro_slots, self._macro_names, on_changed=self._notify_changed)
             if name in previous:
                 row.value = previous[name]
             self.rows[name] = row

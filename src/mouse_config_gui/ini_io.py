@@ -8,6 +8,12 @@ into MouseConfig.macros, but decorative comments explaining field meaning/ranges
 are not preserved on save -- mouse_m908's own -R output doesn't preserve them
 either (it always emits its own fixed set of comments), so there's nothing
 canonical to round-trip there.
+
+`# Macro N name: ...` is this app's own extension (mouse_m908's protocol has
+no name field) -- a single `#`, not `;`, so mouse_m908's set_all_macros
+(which only recognizes lines starting with `;## macro` or `;# `) silently
+ignores it, same as it already ignores `# Model:`/`# Currently active
+profile:`. Verified against mouse_m908's actual source, not assumed.
 """
 
 import re
@@ -21,6 +27,7 @@ _SECTION_RE = re.compile(r"^\[profile(\d)\]$")
 _MODEL_RE = re.compile(r"^#\s*Model:\s*(\S+)")
 _ACTIVE_PROFILE_RE = re.compile(r"^#\s*Currently active profile:\s*(\d+)")
 _ACTIVE_DPI_RE = re.compile(r"^#\s*Active dpi level(?: for this profile)?:\s*(\d+)")
+_MACRO_NAME_RE = re.compile(r"^#\s*Macro (\d+) name:\s*(.*)$")
 _MACRO_HEADER_RE = re.compile(r"^;##\s*macro(\d+)$")
 _MACRO_ACTION_RE = re.compile(r"^;#\s*(\S+)\t(.*)$")
 _DPI_ENABLE_RE = re.compile(r"^dpi([1-5])_enable$")
@@ -57,6 +64,8 @@ def load(path: Path) -> MouseConfig:
                 config.model = match.group(1)
             elif match := _ACTIVE_PROFILE_RE.match(line):
                 config.active_profile = int(match.group(1))
+            elif match := _MACRO_NAME_RE.match(line):
+                config.macro_names[int(match.group(1))] = match.group(2).strip()
             elif current_profile is not None and (match := _ACTIVE_DPI_RE.match(line)):
                 profiles[current_profile].active_dpi_slot = int(match.group(1))
             continue
@@ -144,6 +153,9 @@ def save(config: MouseConfig, path: Path) -> None:
         lines.append("")
         for macro_num in sorted(config.macros):
             lines.append("")
+            name = config.macro_names.get(macro_num)
+            if name:
+                lines.append(f"# Macro {macro_num} name: {name}")
             lines.append(f";## macro{macro_num}")
             for action in config.macros[macro_num]:
                 lines.append(f";# {action.kind}\t{action.value}")

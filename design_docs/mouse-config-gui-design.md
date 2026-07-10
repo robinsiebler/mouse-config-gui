@@ -198,8 +198,12 @@ See accompanying mockup (`mouse_gui_mockup.html`). Summary:
     model, and a custom value entry that only accepts the model's valid format (actual
     decimal in range, or `0xHHHH` bytecode, depending on capability descriptor). Enforces
     "at least one slot enabled" by disabling the checkbox on the last remaining enabled row.
-  - **Button mapping group:** present but disabled, labeled "Coming in a future version"
-    (v2 placeholder, see §10) so the layout doesn't need rework later.
+  - **Button mapping group:** a validated freeform entry per button plus a
+    categorized "Choose…" picker (see §10, `macro-editor.md` §4 for the
+    macro-naming integration).
+- **Macros dialog:** a "Macros…" button in the header bar (not per-profile --
+  the 15 macro slots are shared across all 5 profiles) opens a standalone
+  sequencer/library editor; see `macro-editor.md`.
 
 ## 6. Field validation summary
 
@@ -261,19 +265,20 @@ Originally out of scope for v1 per this doc's original call; both shipped in v2:
   `keymap_data.yaml`): a validated freeform entry per button plus a categorized
   "Choose…" picker, covering the full grammar from `keymap.md` -- plain keys,
   key combos (`super_l+shift_l+2`), `fire:button:repeats:delay`,
-  `snipe:dpi`, `macro<N>` references, and the special/media/compatibility
-  tokens. Grammar data and byte-level ranges were verified directly against
-  `mouse_m908`'s C++ source (not just this doc or `keymap.md`), which turned
-  up a few corrections along the way -- e.g. fire's repeats/delay actually
-  accept 0-255 (a plain `uint8_t` cast), not the 1-255 `keymap.md` documents.
-- **Macro editor** (`macro_editor.py`): a manual sequencer (add/remove/reorder,
-  no live key-capture recording) for the shared 15-slot macro store, supporting
-  `down`/`up`/`delay`/`move_*` actions via the new inline `;##`/`;#` comment
-  format (the old one-macro-per-file format isn't exposed in the GUI -- the
-  app always transfers all 15 slots together via `mouse_m908 -m`). The byte
-  budget actually allows **69 actions per macro**, not the 67 this doc
-  originally guessed -- confirmed by simulating `_i_encode_macro`'s offset
-  arithmetic against the real source.
+  `snipe:dpi`, `macro<N>` references (shown with the macro's name if it has
+  one, e.g. "Discord PTT (Macro 3)" -- see `macro-editor.md` §4), and the
+  special/media/compatibility tokens. Grammar data and byte-level ranges were
+  verified directly against `mouse_m908`'s C++ source (not just this doc or
+  `keymap.md`), which turned up a few corrections along the way -- e.g.
+  fire's repeats/delay actually accept 0-255 (a plain `uint8_t` cast), not
+  the 1-255 `keymap.md` documents.
+- **Macro editor** (`macro_editor.py`): a manual sequencer (add/edit/
+  reorder/delete, no live key-capture recording) for the shared 15-slot
+  macro store, plus macro naming and a local macro library -- both app-side
+  additions with no equivalent in `mouse_m908`'s own data. Grew enough of
+  its own data model, file formats, and UX decisions (confirmation dialogs,
+  cross-referencing button mappings before a destructive change) to warrant
+  its own doc: see **[`macro-editor.md`](macro-editor.md)**.
 
 ## 11. Open questions before implementation — resolved
 

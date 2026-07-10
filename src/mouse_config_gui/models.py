@@ -38,3 +38,7 @@ class MouseConfig:
     # 15 shared macro slots (1-15), each an ordered action list. Validated
     # against keymap.py's is_valid_macro_action() by the macro editor.
     macros: dict[int, list[MacroAction]] = field(default_factory=dict)
+    # App-side only -- mouse_m908's macro protocol has no name field. Stored
+    # as a "# Macro N name: ..." comment ini_io.py writes/reads; mouse_m908
+    # itself ignores it (only recognizes lines starting with ";").
+    macro_names: dict[int, str] = field(default_factory=dict)

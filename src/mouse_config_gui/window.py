@@ -1,4 +1,5 @@
 import os
+import re
 import tempfile
 import threading
 from pathlib import Path
@@ -10,7 +11,7 @@ gi.require_version("Adw", "1")
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from mouse_config_gui import capability, device_cli, ini_io
+from mouse_config_gui import capability, device_cli, ini_io, macro_library
 from mouse_config_gui.button_group import ButtonGroup
 from mouse_config_gui.dpi_group import DpiGroup, NUM_DPI_SLOTS
 from mouse_config_gui.ini_io import NUM_PROFILES
@@ -27,7 +28,12 @@ class MainWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title("Mouse Configurator")
-        self.set_default_size(640, 720)
+        # Wide enough that the Macros dialog (content_width=960) doesn't get
+        # clipped -- Adw.Dialog is constrained to fit inside its parent
+        # window, not just its own content_width; verified the macro editor
+        # needs ~665px minimum before an AdwFloatingSheet width warning and
+        # visible clipping kick in.
+        self.set_default_size(900, 760)
 
         self._loaded_config: MouseConfig | None = None
         self._current_file_path: Path | None = None
@@ -35,6 +41,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Shared across all 5 profiles (MouseConfig-level, not per-profile,
         # unlike LED/DPI/Buttons) -- mutated in place by MacroEditorDialog.
         self._macros: dict[int, list[MacroAction]] = {}
+        self._macro_names: dict[int, str] = {}
 
         self.profile_stack = Adw.ViewStack()
         self._swatch_provider = Gtk.CssProvider()
@@ -90,8 +97,29 @@ class MainWindow(Adw.ApplicationWindow):
         return header_bar
 
     def _on_macros_clicked(self, _button: Gtk.Button) -> None:
-        dialog = MacroEditorDialog(self._macros, on_changed=self._mark_dirty)
+        dialog = MacroEditorDialog(
+            self._macros,
+            self._macro_names,
+            self._find_macro_references,
+            on_changed=self._mark_dirty,
+        )
         dialog.present(self)
+
+    def _find_macro_references(self, macro_slot: int) -> list[str]:
+        """Human-readable "Profile N: Button" locations currently mapped to
+        macro_slot (macroN / macroN:repeats / macroN:while / macroN:until),
+        across all 5 profiles -- so the macro editor can warn before
+        clearing/replacing a slot out from under a button mapping that still
+        points at it by number."""
+        pattern = re.compile(rf"^macro{macro_slot}(?::.*)?$")
+        references = []
+        for profile_num, button_group in self.button_groups.items():
+            for button_name, value in button_group.mappings.items():
+                if pattern.match(value):
+                    row = button_group.rows.get(button_name)
+                    label = row.get_title() if row is not None else button_name
+                    references.append(f"Profile {profile_num}: {label}")
+        return references
 
     def _setup_file_actions(self) -> None:
         open_action = Gio.SimpleAction.new("open-config", None)
@@ -280,7 +308,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.performance_groups[num] = performance_group
             dpi_group = DpiGroup(initial_capability, on_changed=self._mark_dirty)
             self.dpi_groups[num] = dpi_group
-            button_group = ButtonGroup(initial_capability, on_changed=self._mark_dirty)
+            button_group = ButtonGroup(initial_capability, self._macro_names, on_changed=self._mark_dirty)
             self.button_groups[num] = button_group
 
             page = Adw.PreferencesPage()
@@ -354,6 +382,7 @@ class MainWindow(Adw.ApplicationWindow):
             model=self._current_capability().model,
             active_profile=base.active_profile,
             macros=dict(self._macros),
+            macro_names=dict(self._macro_names),
         )
 
         for num in range(1, NUM_PROFILES + 1):
@@ -385,6 +414,25 @@ class MainWindow(Adw.ApplicationWindow):
     def _populate_from_config(self, config: MouseConfig) -> None:
         self._loaded_config = config
         self._macros = dict(config.macros)
+        # Mutate in place, don't rebind -- ButtonGroup/ButtonRow's macro
+        # picker (button_picker.py) captured this exact dict object once at
+        # construction time so renamed macros show up live; rebinding here
+        # would orphan that reference and freeze it at whatever names
+        # existed the first time a profile page was built.
+        self._macro_names.clear()
+        self._macro_names.update(config.macro_names)
+
+        # mouse_m908 -R always returns fresh device state with no name data
+        # (nowhere on the mouse to store one), so a plain "Read from Mouse"
+        # -- including the automatic one on launch -- would otherwise wipe
+        # every name on every read. Fall back to the locally-remembered name
+        # for any slot that still has content but wasn't explicitly named by
+        # what was just loaded (an explicit "# Macro N name:" from a loaded
+        # .ini file still wins over the remembered one).
+        remembered_names = macro_library.load_slot_names()
+        for slot, name in remembered_names.items():
+            if slot not in self._macro_names and self._macros.get(slot):
+                self._macro_names[slot] = name
 
         for num in range(1, NUM_PROFILES + 1):
             profile = config.profiles[num - 1] if len(config.profiles) >= num else ProfileConfig()

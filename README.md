@@ -5,9 +5,13 @@ GTK4 + libadwaita GUI front end for [`mouse_m908`](https://github.com/dokutan/mo
 letting you edit Redragon/Holtek (VID `0x04d9`) gaming mouse configs with real widgets
 instead of hand-editing the INI file.
 
-See [`design_docs/mouse-config-gui-design.md`](design_docs/mouse-config-gui-design.md) for
-the full design, and [`design_docs/mouse_gui_mockup.html`](design_docs/mouse_gui_mockup.html)
-for a UI mockup.
+See [`docs/user-guide.md`](docs/user-guide.md) for a guide to using the app, and
+[`docs/macro-editor-guide.md`](docs/macro-editor-guide.md) for a deeper walkthrough of the
+macro editor specifically. For contributors:
+[`design_docs/mouse-config-gui-design.md`](design_docs/mouse-config-gui-design.md) has the
+full app design, [`design_docs/macro-editor.md`](design_docs/macro-editor.md) covers the
+macro editor's design, and
+[`design_docs/mouse_gui_mockup.html`](design_docs/mouse_gui_mockup.html) is a UI mockup.
 
 ## Status
 
@@ -15,6 +19,11 @@ Only tested against a real **Redragon M908**. Capability data (LED modes,
 DPI ranges, USB ids, etc.) for the other 11 models `mouse_m908` supports was
 derived directly from its C++ source, not verified against real hardware --
 if something's wrong for your model, please open an issue.
+
+Macro names and the macro library are stored locally, not on the mouse
+(`mouse_m908` has no on-device storage for either) -- back up
+`~/.config/mouse-config-gui/` along with any config `.ini` files if you
+want to keep them.
 
 ## Requirements
 

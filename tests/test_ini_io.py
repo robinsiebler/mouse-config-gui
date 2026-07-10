@@ -81,6 +81,43 @@ def test_save_round_trips_button_fire_and_macros_verbatim(tmp_path):
     assert ";# down\tm" in text
 
 
+def test_macro_name_round_trips(tmp_path):
+    original = ini_io.load(FIXTURES / "example_m908.ini")
+    original.macro_names[1] = "Discord PTT"
+
+    out_path = tmp_path / "roundtrip.ini"
+    ini_io.save(original, out_path)
+    reloaded = ini_io.load(out_path)
+
+    assert reloaded.macro_names == {1: "Discord PTT"}
+    # The name line must not disturb the macro's own action parsing.
+    assert reloaded.macros[1] == original.macros[1]
+
+
+def test_save_writes_macro_name_line_before_header(tmp_path):
+    original = ini_io.load(FIXTURES / "example_m908.ini")
+    original.macro_names[1] = "Discord PTT"
+
+    out_path = tmp_path / "roundtrip.ini"
+    ini_io.save(original, out_path)
+    lines = out_path.read_text().splitlines()
+
+    name_index = lines.index("# Macro 1 name: Discord PTT")
+    assert lines[name_index + 1] == ";## macro1"
+
+
+def test_unnamed_macros_have_no_name_line(tmp_path):
+    original = ini_io.load(FIXTURES / "example_m908.ini")
+    original.macro_names[1] = "Discord PTT"  # only macro1 is named
+
+    out_path = tmp_path / "roundtrip.ini"
+    ini_io.save(original, out_path)
+    text = out_path.read_text()
+
+    assert "Macro 2 name" not in text
+    assert "Macro 3 name" not in text
+
+
 def test_save_writes_empty_profile_sections(tmp_path):
     original = ini_io.load(FIXTURES / "example_m908.ini")
 
