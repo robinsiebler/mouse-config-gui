@@ -118,6 +118,31 @@ def test_unnamed_macros_have_no_name_line(tmp_path):
     assert "Macro 3 name" not in text
 
 
+def test_load_drops_invalid_macro_action_and_reports_it(tmp_path):
+    # Regression test for the reported KeyError: 'repeat' crash -- a
+    # hand-edited file can carry a ";# kind\tvalue" line whose kind isn't
+    # one of the seven real macro-action kinds (most plausibly "repeat",
+    # confused with the unrelated macroN:repeats button-mapping syntax).
+    # load() must drop it and report the drop, not load it unvalidated.
+    ini_path = tmp_path / "bad_macro.ini"
+    ini_path.write_text(
+        "[profile1]\n"
+        "\n"
+        ";## macro1\n"
+        ";# down\tm\n"
+        ";# repeat\t25\n"
+        ";# up\tm\n"
+    )
+
+    config = ini_io.load(ini_path)
+
+    assert config.macros[1] == [
+        MacroAction(kind="down", value="m"),
+        MacroAction(kind="up", value="m"),
+    ]
+    assert config.dropped_macro_actions == {1: 1}
+
+
 def test_save_writes_empty_profile_sections(tmp_path):
     original = ini_io.load(FIXTURES / "example_m908.ini")
 

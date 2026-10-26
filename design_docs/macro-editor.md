@@ -40,6 +40,15 @@ Grammar/range validation (`keymap.py`'s `is_valid_macro_action`,
   offset 8, stopping once the offset exceeds 212 — simulated exactly:
   **69 actions max**, not the 67 originally guessed in the main design doc.
 
+Both macro data sources (`ini_io.py`'s `.ini` macro-comment parsing and
+`macro_library.py`'s library YAML) validate every action against
+`is_valid_macro_action()` on load, dropping any that fail rather than
+loading them unvalidated — a hand-edited file or library entry with a bad
+`kind` (e.g. `repeat`, which is a real word in this domain but names an
+unrelated button-mapping concept, not a macro action) is now a dropped
+action plus a toast telling you so, not a crash when you open that slot.
+See `macro-editor-repeat-bug-handoff.md` for the incident this closed.
+
 ## 3. Naming: why a `.ini` comment, not a separate config file
 
 `mouse_m908`'s macro protocol has no name field anywhere — confirmed from

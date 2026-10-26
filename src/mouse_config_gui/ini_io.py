@@ -19,6 +19,7 @@ profile:`. Verified against mouse_m908's actual source, not assumed.
 import re
 from pathlib import Path
 
+from mouse_config_gui.keymap import is_valid_macro_action
 from mouse_config_gui.models import DpiSlot, MacroAction, MouseConfig, ProfileConfig
 
 NUM_PROFILES = 5
@@ -56,7 +57,18 @@ def load(path: Path) -> MouseConfig:
             continue
         if current_macro is not None and (match := _MACRO_ACTION_RE.match(line)):
             kind, value = match.groups()
-            config.macros[current_macro].append(MacroAction(kind=kind, value=value))
+            # A hand-edited file (or a garbled/stray comment) can produce a
+            # kind the action-list grammar doesn't define -- e.g. "repeat",
+            # which is a real word in this format but belongs to the
+            # unrelated button-mapping macroN:repeats grammar, not here.
+            # Drop it rather than loading something the macro editor can't
+            # display/the mouse firmware won't understand.
+            if is_valid_macro_action(kind, value):
+                config.macros[current_macro].append(MacroAction(kind=kind, value=value))
+            else:
+                config.dropped_macro_actions[current_macro] = (
+                    config.dropped_macro_actions.get(current_macro, 0) + 1
+                )
             continue
 
         if line.startswith("#"):

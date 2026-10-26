@@ -5,7 +5,7 @@ from mouse_config_gui.models import MacroAction
 
 
 def test_load_library_returns_empty_dict_when_file_missing(tmp_path):
-    assert macro_library.load_library(tmp_path / "does_not_exist.yaml") == {}
+    assert macro_library.load_library(tmp_path / "does_not_exist.yaml") == ({}, {})
 
 
 def test_save_then_load_round_trips(tmp_path):
@@ -21,9 +21,10 @@ def test_save_then_load_round_trips(tmp_path):
     }
 
     macro_library.save_library(entries, path)
-    reloaded = macro_library.load_library(path)
+    reloaded, dropped = macro_library.load_library(path)
 
     assert reloaded == entries
+    assert dropped == {}
 
 
 def test_save_library_creates_parent_directories(tmp_path):
@@ -31,7 +32,36 @@ def test_save_library_creates_parent_directories(tmp_path):
     macro_library.save_library({"Foo": [MacroAction(kind="delay", value="5")]}, path)
 
     assert path.exists()
-    assert macro_library.load_library(path) == {"Foo": [MacroAction(kind="delay", value="5")]}
+    assert macro_library.load_library(path) == (
+        {"Foo": [MacroAction(kind="delay", value="5")]},
+        {},
+    )
+
+
+def test_load_library_drops_invalid_actions_and_reports_them(tmp_path):
+    # Regression test for the reported KeyError: 'repeat' crash -- "repeat"
+    # is a real button-mapping concept (macroN:repeats) but not a valid
+    # macro *action* kind, so a library entry with one must load the rest
+    # of the entry and report what got skipped, not crash or disappear.
+    path = tmp_path / "macro_library.yaml"
+    path.write_text(
+        "Bad Macro:\n"
+        "  - kind: down\n"
+        "    value: a\n"
+        "  - kind: repeat\n"
+        "    value: '25'\n"
+        "Good Macro:\n"
+        "  - kind: delay\n"
+        "    value: '5'\n"
+    )
+
+    library, dropped = macro_library.load_library(path)
+
+    assert library == {
+        "Bad Macro": [MacroAction(kind="down", value="a")],
+        "Good Macro": [MacroAction(kind="delay", value="5")],
+    }
+    assert dropped == {"Bad Macro": 1}
 
 
 def test_library_path_honors_xdg_config_home(monkeypatch, tmp_path):

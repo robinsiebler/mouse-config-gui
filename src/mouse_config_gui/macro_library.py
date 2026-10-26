@@ -25,6 +25,7 @@ from pathlib import Path
 
 import yaml
 
+from mouse_config_gui.keymap import is_valid_macro_action
 from mouse_config_gui.models import MacroAction
 
 
@@ -42,16 +43,28 @@ def slot_names_path() -> Path:
     return _config_dir() / "macro_slot_names.yaml"
 
 
-def load_library(path: Path | None = None) -> dict[str, list[MacroAction]]:
+def load_library(path: Path | None = None) -> tuple[dict[str, list[MacroAction]], dict[str, int]]:
+    """Returns (library, dropped) -- `dropped` maps entry name -> count of
+    actions skipped because they failed is_valid_macro_action() (e.g. a
+    hand-edited macro_library.yaml with a typo'd/garbled `kind`), so the
+    caller can tell the user their saved macro got shorter instead of that
+    happening silently."""
     path = path if path is not None else library_path()
     if not path.exists():
-        return {}
+        return {}, {}
 
     data = yaml.safe_load(path.read_text()) or {}
-    return {
-        name: [MacroAction(kind=action["kind"], value=action["value"]) for action in actions]
-        for name, actions in data.items()
-    }
+    library: dict[str, list[MacroAction]] = {}
+    dropped: dict[str, int] = {}
+    for name, actions in data.items():
+        kept = []
+        for action in actions:
+            if is_valid_macro_action(action["kind"], action["value"]):
+                kept.append(MacroAction(kind=action["kind"], value=action["value"]))
+            else:
+                dropped[name] = dropped.get(name, 0) + 1
+        library[name] = kept
+    return library, dropped
 
 
 def save_library(entries: dict[str, list[MacroAction]], path: Path | None = None) -> None:

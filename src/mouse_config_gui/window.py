@@ -188,6 +188,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         self._populate_from_config(config)
         self._show_toast(f"Loaded {path.name}.{model_note}")
+        self._show_dropped_macro_actions_toast(config)
 
     def _on_save_config(self, _action: Gio.SimpleAction, _param) -> None:
         if self._current_file_path is not None:
@@ -364,6 +365,16 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _show_toast(self, text: str) -> None:
         self.toast_overlay.add_toast(Adw.Toast(title=text))
+
+    def _show_dropped_macro_actions_toast(self, config: MouseConfig) -> None:
+        # ini_io.load() drops rather than crashes on a macro action line with
+        # an invalid kind (e.g. a hand-edited ";# repeat\t25" confusing the
+        # action-list grammar with the unrelated macroN:repeats button-mapping
+        # syntax) -- surface that data loss instead of leaving it silent,
+        # same convention the macro editor's own library load already uses.
+        for slot, count in sorted(config.dropped_macro_actions.items()):
+            action_text = f"{count} action" + ("" if count == 1 else "s")
+            self._show_toast(f"Macro {slot}: {action_text} couldn't be loaded and were skipped.")
 
     @staticmethod
     def _error_message(exc: Exception) -> str:
@@ -684,6 +695,7 @@ class MainWindow(Adw.ApplicationWindow):
             self._set_actions_sensitive(True)
             self._populate_from_config(config)
             self._show_toast("Read from mouse.")
+            self._show_dropped_macro_actions_toast(config)
 
         def on_error(exc: Exception) -> None:
             self._set_actions_sensitive(True)

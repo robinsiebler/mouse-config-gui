@@ -41,7 +41,11 @@ _KIND_LABELS = {
 
 
 def _action_row_title(action: MacroAction) -> str:
-    label = _KIND_LABELS[action.kind]
+    # action.kind may not be one of the seven real kinds -- it can come from
+    # a loaded file/library entry that bypassed is_valid_macro_action() (see
+    # ini_io.py/macro_library.py), so this must not KeyError on an unknown
+    # kind (that was the actual reported bug).
+    label = _KIND_LABELS.get(action.kind, action.kind.replace("_", " ").title())
     if action.kind == "delay":
         return f"{label}: {action.value} ({int(action.value) * 10} ms)"
     return f"{label}: {action.value}"
@@ -135,7 +139,14 @@ class _ActionRow(Adw.ActionRow):
 
         edit_button = Gtk.Button(icon_name="document-edit-symbolic", valign=Gtk.Align.CENTER)
         edit_button.add_css_class("flat")
-        edit_button.connect("clicked", lambda _b: on_edit(index))
+        # _build_kind_value_widgets() does MACRO_ACTION_KINDS.index(initial.kind),
+        # a plain list .index() that raises ValueError for an unrecognized kind --
+        # disable Edit rather than hit that second crash.
+        if action.kind in MACRO_ACTION_KINDS:
+            edit_button.connect("clicked", lambda _b: on_edit(index))
+        else:
+            edit_button.set_sensitive(False)
+            edit_button.set_tooltip_text(f"Editing '{action.kind}' actions isn't supported yet")
         self.add_suffix(edit_button)
 
         delete_button = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER)
@@ -170,7 +181,7 @@ class MacroEditorDialog(Adw.Dialog):
         self._selected_slot = 1
         self._sidebar_rows: dict[int, Adw.ActionRow] = {}
         self._updating_name_entry = False
-        self._library = macro_library.load_library()
+        self._library, self._library_load_dropped = macro_library.load_library()
 
         sidebar_list = Gtk.ListBox()
         sidebar_list.add_css_class("navigation-sidebar")
@@ -230,6 +241,18 @@ class MacroEditorDialog(Adw.Dialog):
 
         sidebar_list.select_row(self._sidebar_rows[1])
         self._refresh_slot_view()
+        self._show_library_load_drops_toast()
+
+    def _show_library_load_drops_toast(self) -> None:
+        # Mirrors every other destructive/lossy operation in this dialog
+        # (Clear Macro, Replace on Load/Copy) already surfacing a toast --
+        # silently returning a shorter library entry than what's on disk
+        # would be the one exception to that, so it isn't.
+        for name, count in self._library_load_dropped.items():
+            action_text = f"{count} action" + ("" if count == 1 else "s")
+            self._toast_overlay.add_toast(
+                Adw.Toast(title=f"{action_text} in '{name}' couldn't be loaded and were skipped.")
+            )
 
     def _build_add_form(self) -> Gtk.Widget:
         box, self._kind_dropdown, self._key_dropdown, self._number_spin = _build_kind_value_widgets()

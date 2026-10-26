@@ -42,3 +42,8 @@ class MouseConfig:
     # as a "# Macro N name: ..." comment ini_io.py writes/reads; mouse_m908
     # itself ignores it (only recognizes lines starting with ";").
     macro_names: dict[int, str] = field(default_factory=dict)
+    # Populated by ini_io.load() when a ";# kind value" line fails
+    # is_valid_macro_action() (e.g. hand-edited file, stray/garbled
+    # comment) -- slot number -> count of actions dropped rather than
+    # loaded, so the caller can tell the user instead of losing data silently.
+    dropped_macro_actions: dict[int, int] = field(default_factory=dict)
